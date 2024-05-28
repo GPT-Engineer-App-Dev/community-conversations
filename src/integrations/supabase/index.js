@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
@@ -56,6 +57,33 @@ export const useReactions = (postId) => useQuery({
     queryKey: ['reactions', postId],
     queryFn: () => fromSupabase(supabase.from('reactions').select('*').eq('post_id', postId)),
 });
+
+const createGuestAccount = async () => {
+    const { data, error } = await supabase.auth.signUp({
+        email: `guest_${Date.now()}@example.com`,
+        password: Math.random().toString(36).slice(-8),
+    });
+    if (error) throw new Error(error.message);
+    return data.user;
+};
+
+export const useGuestAuth = () => {
+    const [guestUser, setGuestUser] = useState(null);
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('guestUser');
+        if (storedUser) {
+            setGuestUser(JSON.parse(storedUser));
+        } else {
+            createGuestAccount().then(user => {
+                localStorage.setItem('guestUser', JSON.stringify(user));
+                setGuestUser(user);
+            }).catch(console.error);
+        }
+    }, []);
+
+    return guestUser;
+};
 
 export const useAddReaction = () => {
     const queryClient = useQueryClient();
