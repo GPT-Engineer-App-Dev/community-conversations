@@ -58,10 +58,12 @@ export const useReactions = (postId) => useQuery({
     queryFn: () => fromSupabase(supabase.from('reactions').select('*').eq('post_id', postId)),
 });
 
-const createGuestAccount = async () => {
-    const { data, error } = await supabase.auth.signUp({
+const signInAnonymously = async () => {
+    const { data, error } = await supabase.auth.signInWithOtp({
         email: `guest_${Date.now()}@example.com`,
-        password: Math.random().toString(36).slice(-8),
+        options: {
+            shouldCreateUser: true,
+        },
     });
     if (error) throw new Error(error.message);
     return data.user;
@@ -75,7 +77,7 @@ export const useGuestAuth = () => {
         if (storedUser) {
             setGuestUser(JSON.parse(storedUser));
         } else {
-            createGuestAccount().then(user => {
+            signInAnonymously().then(user => {
                 localStorage.setItem('guestUser', JSON.stringify(user));
                 setGuestUser(user);
             }).catch(console.error);
