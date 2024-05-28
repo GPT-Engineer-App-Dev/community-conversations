@@ -8,7 +8,6 @@ const Index = () => {
   const { data: posts, isLoading, isError } = usePosts();
   const addPostMutation = useAddPost();
   const addReactionMutation = useAddReaction();
-
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -22,7 +21,14 @@ const Index = () => {
 
   const handleReaction = (postId, emoji) => {
     if (guestUser) {
-      addReactionMutation.mutate({ post_id: postId, emoji, user_id: guestUser.id });
+      const existingReaction = posts.find(post => post.id === postId).reactions.find(reaction => reaction.user_id === guestUser.id && reaction.emoji === emoji);
+      if (existingReaction) {
+        // Remove reaction
+        addReactionMutation.mutate({ id: existingReaction.id, post_id: postId, emoji, user_id: guestUser.id }, { method: 'DELETE' });
+      } else {
+        // Add reaction
+        addReactionMutation.mutate({ post_id: postId, emoji, user_id: guestUser.id });
+      }
     }
   };
 
@@ -62,8 +68,20 @@ const Index = () => {
                 {post.reactions?.map((reaction) => (
                   <Text key={reaction.id}>{reaction.emoji}</Text>
                 ))}
-                <Button size="sm" onClick={() => handleReaction(post.id, "👍")}>👍</Button>
-                <Button size="sm" onClick={() => handleReaction(post.id, "❤️")}>❤️</Button>
+                <Button
+                  size="sm"
+                  colorScheme={post.reactions?.some(reaction => reaction.user_id === guestUser.id && reaction.emoji === "👍") ? "green" : "gray"}
+                  onClick={() => handleReaction(post.id, "👍")}
+                >
+                  👍
+                </Button>
+                <Button
+                  size="sm"
+                  colorScheme={post.reactions?.some(reaction => reaction.user_id === guestUser.id && reaction.emoji === "❤️") ? "green" : "gray"}
+                  onClick={() => handleReaction(post.id, "❤️")}
+                >
+                  ❤️
+                </Button>
               </HStack>
             </Box>
           ))
