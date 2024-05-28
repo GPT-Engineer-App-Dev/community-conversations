@@ -1,8 +1,10 @@
 import { Box, Container, VStack, Text, Heading, Input, Textarea, Button, HStack, Flex, Spinner } from "@chakra-ui/react";
 import { useState } from "react";
+import { useGuestAuth } from "../integrations/supabase/index.js";
 import { usePosts, useAddPost, useAddReaction } from "../integrations/supabase/index.js";
 
 const Index = () => {
+  const guestUser = useGuestAuth();
   const { data: posts, isLoading, isError } = usePosts();
   const addPostMutation = useAddPost();
   const addReactionMutation = useAddReaction();
@@ -19,7 +21,9 @@ const Index = () => {
   };
 
   const handleReaction = (postId, emoji) => {
-    addReactionMutation.mutate({ post_id: postId, emoji, user_id: "user-id-placeholder" });
+    if (guestUser) {
+      addReactionMutation.mutate({ post_id: postId, emoji, user_id: guestUser.id });
+    }
   };
 
   return (
