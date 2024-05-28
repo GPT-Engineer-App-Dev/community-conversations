@@ -19,33 +19,50 @@ const fromSupabase = async (query) => {
 
 /* supabase integration types
 
-// EXAMPLE TYPES SECTION
-
-Foo // table: foos
+Post // table: posts
     id: number
     title: string
-    bars?: Bar[] // available if .select('*,bars(*)') was done
+    body: string
+    created_at: string
+    author_id: string
+    reactions?: Reaction[] // available if .select('*,reactions(*)') was done
 
-Bar // table: bars
+Reaction // table: reactions
     id: number
-    foo_id: number // foreign key to Foo
-	
+    post_id: number // foreign key to Post
+    user_id: string
+    emoji: string
+
 */
 
 // hooks
 
-// EXAMPLE HOOKS SECTION
+export const usePosts = () => useQuery({
+    queryKey: ['posts'],
+    queryFn: () => fromSupabase(supabase.from('posts').select('*,reactions(*)')),
+});
 
-export const useFoo = ()=> useQuery({
-    queryKey: ['foo'],
-    queryFn: fromSupabase(supabase.from('foo').select('*,bars(*)')),
-})
-export const useAddFoo = () => {
+export const useAddPost = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (newFoo)=> fromSupabase(supabase.from('foo').insert([{ title: newFoo.title }])),
-        onSuccess: ()=> {
-            queryClient.invalidateQueries('foo');
+        mutationFn: (newPost) => fromSupabase(supabase.from('posts').insert([newPost])),
+        onSuccess: () => {
+            queryClient.invalidateQueries('posts');
+        },
+    });
+};
+
+export const useReactions = (postId) => useQuery({
+    queryKey: ['reactions', postId],
+    queryFn: () => fromSupabase(supabase.from('reactions').select('*').eq('post_id', postId)),
+});
+
+export const useAddReaction = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (newReaction) => fromSupabase(supabase.from('reactions').insert([newReaction])),
+        onSuccess: () => {
+            queryClient.invalidateQueries('reactions');
         },
     });
 };

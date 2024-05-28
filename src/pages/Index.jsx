@@ -1,22 +1,25 @@
-import { Box, Container, VStack, Text, Heading, Input, Textarea, Button, HStack, Flex } from "@chakra-ui/react";
+import { Box, Container, VStack, Text, Heading, Input, Textarea, Button, HStack, Flex, Spinner } from "@chakra-ui/react";
 import { useState } from "react";
+import { usePosts, useAddPost, useAddReaction } from "../integrations/supabase/index.js";
 
 const Index = () => {
-  const [posts, setPosts] = useState([]);
+  const { data: posts, isLoading, isError } = usePosts();
+  const addPostMutation = useAddPost();
+  const addReactionMutation = useAddReaction();
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
   const handlePostSubmit = () => {
     if (title && content) {
-      const newPost = {
-        title,
-        content,
-        timestamp: new Date().toLocaleString(),
-      };
-      setPosts([newPost, ...posts]);
+      addPostMutation.mutate({ title, body: content });
       setTitle("");
       setContent("");
     }
+  };
+
+  const handleReaction = (postId, emoji) => {
+    addReactionMutation.mutate({ post_id: postId, emoji, user_id: "user-id-placeholder" });
   };
 
   return (
@@ -39,15 +42,28 @@ const Index = () => {
             onChange={(e) => setContent(e.target.value)}
             mb={2}
           />
-          <Button colorScheme="blue" onClick={handlePostSubmit}>Submit</Button>
+          <Button colorScheme="blue" onClick={handlePostSubmit} isLoading={addPostMutation.isLoading}>Submit</Button>
         </Box>
-        {posts.map((post, index) => (
-          <Box key={index} p={4} borderWidth="1px" borderRadius="lg" boxShadow="md">
-            <Heading size="md">{post.title}</Heading>
-            <Text mt={2}>{post.content}</Text>
-            <Text mt={2} fontSize="sm" color="gray.500">{post.timestamp}</Text>
-          </Box>
-        ))}
+        {isLoading ? (
+          <Spinner />
+        ) : isError ? (
+          <Text color="red.500">Error loading posts</Text>
+        ) : (
+          posts.map((post) => (
+            <Box key={post.id} p={4} borderWidth="1px" borderRadius="lg" boxShadow="md">
+              <Heading size="md">{post.title}</Heading>
+              <Text mt={2}>{post.body}</Text>
+              <Text mt={2} fontSize="sm" color="gray.500">{post.created_at}</Text>
+              <HStack spacing={2} mt={2}>
+                {post.reactions?.map((reaction) => (
+                  <Text key={reaction.id}>{reaction.emoji}</Text>
+                ))}
+                <Button size="sm" onClick={() => handleReaction(post.id, "👍")}>👍</Button>
+                <Button size="sm" onClick={() => handleReaction(post.id, "❤️")}>❤️</Button>
+              </HStack>
+            </Box>
+          ))
+        )}
       </VStack>
     </Container>
   );
