@@ -61,6 +61,7 @@ export const useReactions = (postId) => useQuery({
 const signInAnonymously = async () => {
     const { data, error } = await supabase.auth.signInAnonymously();
     if (error) throw new Error(error.message);
+    localStorage.setItem('supabase.auth.token', JSON.stringify(data.session));
     return data.user;
 };
 
@@ -68,12 +69,13 @@ export const useGuestAuth = () => {
     const [guestUser, setGuestUser] = useState(null);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('guestUser');
-        if (storedUser) {
-            setGuestUser(JSON.parse(storedUser));
+        const storedSession = localStorage.getItem('supabase.auth.token');
+        if (storedSession) {
+            const session = JSON.parse(storedSession);
+            supabase.auth.setSession(session);
+            setGuestUser(session.user);
         } else {
             signInAnonymously().then(user => {
-                localStorage.setItem('guestUser', JSON.stringify(user));
                 setGuestUser(user);
             }).catch(console.error);
         }
