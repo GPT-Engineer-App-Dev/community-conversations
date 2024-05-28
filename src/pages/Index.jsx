@@ -1,7 +1,7 @@
 import { Box, Container, VStack, Text, Heading, Input, Textarea, Button, HStack, Flex, Spinner } from "@chakra-ui/react";
 import { useState } from "react";
 import { useGuestAuth } from "../integrations/supabase/index.js";
-import { usePosts, useAddPost, useAddReaction, supabase, queryClient } from "../integrations/supabase/index.js";
+import { usePosts, useAddPost, useAddReaction, queryClient } from "../integrations/supabase/index.js";
 
 const Index = () => {
   const guestUser = useGuestAuth();
@@ -26,6 +26,7 @@ const Index = () => {
       if (existingReaction) {
         // Remove reaction
         try {
+          const { supabase } = await import("../integrations/supabase/index.js");
           await supabase.from('reactions').delete().eq('id', existingReaction.id);
           queryClient.invalidateQueries(['reactions', postId]);
         } catch (error) {
