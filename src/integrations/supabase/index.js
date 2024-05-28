@@ -59,12 +59,7 @@ export const useReactions = (postId) => useQuery({
 });
 
 const signInAnonymously = async () => {
-    const { data, error } = await supabase.auth.signInWithOtp({
-        email: `guest_${Date.now()}@example.com`,
-        options: {
-            shouldCreateUser: true,
-        },
-    });
+    const { data, error } = await supabase.auth.signInAnonymously();
     if (error) throw new Error(error.message);
     return data.user;
 };
