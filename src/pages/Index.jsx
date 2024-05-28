@@ -1,7 +1,7 @@
 import { Box, Container, VStack, Text, Heading, Input, Textarea, Button, HStack, Flex, Spinner } from "@chakra-ui/react";
 import { useState } from "react";
 import { useGuestAuth } from "../integrations/supabase/index.js";
-import { usePosts, useAddPost, useAddReaction } from "../integrations/supabase/index.js";
+import { usePosts, useAddPost, useAddReaction, queryClient } from "../integrations/supabase/index.js";
 
 const Index = () => {
   const guestUser = useGuestAuth();
@@ -19,12 +19,19 @@ const Index = () => {
     }
   };
 
-  const handleReaction = (postId, emoji) => {
+  const handleReaction = async (postId, emoji) => {
     if (guestUser) {
-      const existingReaction = posts.find(post => post.id === postId).reactions.find(reaction => reaction.user_id === guestUser.id && reaction.emoji === emoji);
+      const post = posts.find(post => post.id === postId);
+      const existingReaction = post.reactions.find(reaction => reaction.user_id === guestUser.id && reaction.emoji === emoji);
       if (existingReaction) {
         // Remove reaction
-        addReactionMutation.mutate({ id: existingReaction.id, post_id: postId, emoji, user_id: guestUser.id }, { method: 'DELETE' });
+        try {
+          const { supabase } = await import("../integrations/supabase/index.js");
+          await supabase.from('reactions').delete().eq('id', existingReaction.id);
+          queryClient.invalidateQueries(['reactions', postId]);
+        } catch (error) {
+          console.error('Error removing reaction:', error);
+        }
       } else {
         // Add reaction
         addReactionMutation.mutate({ post_id: postId, emoji, user_id: guestUser.id });
